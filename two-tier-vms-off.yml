@@ -1,0 +1,42 @@
+---
+# Example playbook to Start/Stop VM's in Azure
+# You will need to change the resource_group and storate_group variables below
+# as well as add your VM's.
+# Note the only reason to break out the FW's from the other VM's is that they
+# have multiple NIC's, and you have to list the name of the PRIMARY NIC.
+
+- hosts: localhost
+  vars:
+    resource_group: "My_Resource_Group_Name"
+    storage_account: "mystorageaccountname"
+    azure_fws:
+       fw1: 
+          vm_name: "pan-fw"
+          vm_nic: "FWeth0"
+
+    azure_vms: 
+      - "webserver-vm"
+      - "database-vm"
+
+  tasks:
+    - name: "Power Off Virtual Firewalls"
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        storage_account: "{{ storage_account }}"
+        name: "{{ item.value.vm_name }}"
+        network_interfaces: "{{ item.value.vm_nic }}"
+        state: present
+        started: no
+      loop: "{{ lookup('dict', azure_fws, wantlist=True) }}"
+
+    - name: "Power Off the VMs"
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group }}"
+        storage_account: "{{ storage_account }}"
+        name: "{{ item }}"
+        state: present
+        started: no
+      loop: "{{azure_vms}}"
+
+
+
